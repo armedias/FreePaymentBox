@@ -7,7 +7,7 @@ This is free software, and as such comes with NO WARRANTY.
 
 This is an adaptator of Paybox Payment system for Prestashop.
 
-Version is now 0.01 and then, plenty is to do. 
+Version is now 0.01.
 
 It already works on a real shop with real money.
 
@@ -27,7 +27,9 @@ Prestashop is not involved in this project.
 
 Paybox, Point Transaction Systems and Prestashop are registred trademarks.
 
-Before asking or agueing, remember that module is 'FREE' and that no one 'PAY' me :) 
+Before asking or aguing, remember that module is 'FREE' and that no one 'PAY' me :) 
+
+For the momement I can only edit readme file :(
 
 Have a good journey
 
