@@ -29,8 +29,6 @@ Paybox, Point Transaction Systems and Prestashop are registred trademarks.
 
 Before asking or aguing, remember that module is 'FREE' and that no one 'PAY' me :) 
 
-For the momement I can only edit readme file :(
-
 Have a good journey
 
 
