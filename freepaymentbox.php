@@ -19,13 +19,7 @@ if (!defined('_PS_VERSION_')) {
 class Freepaymentbox extends PaymentModule {
 	private $_html = '';
         // url appel paybox classique
-        // 0 préprod
-        // 1 prod principal
-        // 2 prod secours
-        private $pb_url = array('0' => 'https://preprod-tpeweb.paybox.com/cgi/MYchoix_pagepaiement.cgi',
-            '1' => 'https://tpeweb.paybox.com/cgi/MYchoix_pagepaiement.cgi',
-            '2' => 'https://tpeweb1.paybox.com/cgi/MYchoix_pagepaiement.cgi'
-            );
+        private $pb_url; 
         //private $pb_config_lib = array('PBX_SITE','PBX_RANG','PBX_IDENTIFIANT','PBX_HASH','PBX_DEVISE','SECRET_KEY','MODE_PROD');
         private $pb_config = array('PBX_SITE','PBX_RANG','PBX_IDENTIFIANT','PBX_HASH','PBX_DEVISE','SECRET_KEY','MODE_PROD');
         
@@ -44,6 +38,25 @@ class Freepaymentbox extends PaymentModule {
 		$this->currencies = false;
 
 		parent::__construct();
+
+        // Gestion de l'url Paybox mobile et classique
+        // 0 préprod
+        // 1 prod principal
+        // 2 prod secours
+        if (Context::getContext()->getMobileDevice() == FALSE)
+        {
+            $this->pb_url = array('0' => 'https://preprod-tpeweb.paybox.com/cgi/MYchoix_pagepaiement.cgi',
+            '1' => 'https://tpeweb.paybox.com/cgi/MYchoix_pagepaiement.cgi',
+            '2' => 'https://tpeweb1.paybox.com/cgi/MYchoix_pagepaiement.cgi'
+            );
+        }
+        else
+        {
+            $this->pb_url = array('0' => 'https://preprod-tpeweb.paybox.com/cgi/ChoixPaiementMobile.cgi',
+            '1' => 'https://tpeweb.paybox.com/cgi/ChoixPaiementMobile.cgi',
+            '2' => 'https://tpeweb1.paybox.com/cgi/ChoixPaiementMobile.cgi'
+            );
+        }
 
 		$this->displayName = $this->l('Freepaymentbox');
 		$this->description = $this->l('Free to use and free of charge paybox payment toolkit adaptation');
