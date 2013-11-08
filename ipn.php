@@ -40,13 +40,17 @@ if (Freepaymentbox::verification_signature()){
 
 if ($montant >0 && $montant == (int)$montant_panier && $erreur == '00000'){
     $pb->validateOrder($id_cart, _PS_OS_PAYMENT_, $montant/100, 'Paybox', 
-            "Paybox autorisation : $autorisation <br>Code $erreur"
-            );
+            "Paybox autorisation : $autorisation <br>Code $erreur",
+            array('transaction_id' => $ref_cmd)
+        );
 }
 else
 {
     if ($montant >0 && $erreur == '00000'){     // paiement mais différent du montant du panier 
-        $pb->validateOrder($id_cart, _PS_OS_PAYMENT_, $montant/100, 'Paybox', "Paybox autorisation : $autorisation <br>Code $erreur");
+        $pb->validateOrder($id_cart, _PS_OS_PAYMENT_, $montant/100, 'Paybox', 
+            "Paybox autorisation : $autorisation <br>Code $erreur",
+            array('transaction_id' => $ref_cmd)
+        );
         //$bankwire->validateOrder($cart->id, Configuration::get('PS_OS_BANKWIRE'), $total, $bankwire->displayName, NULL, array(), (int)$currency->id, false, $customer->secure_key);
         Logger::addLog("Retour banque client $id_customer panier $id_cart pour montant $montant <> montant panier $montant_panier" , 2, $erreur);
     }
