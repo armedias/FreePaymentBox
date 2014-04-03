@@ -33,9 +33,12 @@ $pb = new Freepaymentbox();
 // 
 // check hmac signature
 
-$secure_key='';
-if (Freepaymentbox::verification_signature()){
-    $secure_key = Tools::getValue('signature');
+// check signature
+if(!Freepaymentbox::verification_signature()){
+    Logger::addLog("Signature banque invalide id_cart = $id_cart" , 4, $erreur);
+    throw new Exception('Signature banque invalide');
+    exit(); // just in case exception catched and ignored !
+    // @todo should we mark the order invalid ?
 }
 
 if ($montant >0 && $montant == (int)$montant_panier && $erreur == '00000'){
@@ -54,7 +57,6 @@ else
             "Paybox autorisation : $autorisation <br>Code $erreur",
             array('transaction_id' => $ref_cmd)
         );
-        //$bankwire->validateOrder($cart->id, Configuration::get('PS_OS_BANKWIRE'), $total, $bankwire->displayName, NULL, array(), (int)$currency->id, false, $customer->secure_key);
         Logger::addLog("Retour banque client $id_customer panier $id_cart pour montant $montant <> montant panier $montant_panier" , 2, $erreur);
     }
     else {
@@ -62,4 +64,3 @@ else
     }
 }
 echo '<html><head></head><body></body></html>';     // doit répondre par une page 'html vide', ça marche comme ça ??? sinon on recoit des mails 'Warning'
-?>
