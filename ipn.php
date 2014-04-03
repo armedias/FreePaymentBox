@@ -40,8 +40,11 @@ if (Freepaymentbox::verification_signature()){
 
 if ($montant >0 && $montant == (int)$montant_panier && $erreur == '00000'){
     $pb->validateOrder($id_cart, _PS_OS_PAYMENT_, $montant/100, 'Paybox', 
-            "Paybox autorisation : $autorisation <br>Code $erreur",
-            array('transaction_id' => $ref_cmd)
+            "Paybox autorisation : $autorisation <br>Code $erreur ",
+            array('transaction_id' => $ref_cmd),
+            null, //$currency_special
+            false, // $dont_touch_amount
+            $cart->secure_key ? $cart->secure_key : false  // $secure_key - in case there is no secure_key in cart, set to false to validate order anyway
         );
 }
 else
