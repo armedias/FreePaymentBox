@@ -168,8 +168,11 @@ class Freepaymentbox extends PaymentModule {
      */
     public function getContent()
     {
-        if(!$this->SSLCheck()) {
+        // vérifications
+        if(!$this->CheckSSL()) {
             $this->_html .= $this->displayError( $this->l('Votre serveur ne dispose des fonctions openssl requises') );
+        // fin si erreurs
+        if($this->errors) { //  $this->displayError() a mis $this->errors à true ( ^^ ! SRP !)
             return $this->_html;
         }
 
@@ -221,14 +224,14 @@ class Freepaymentbox extends PaymentModule {
     }
 
     /**
-         * Can server check signature received by paybox response ?
-         * 
-         * @return bool
-         */
-        protected function SSLCheck()
-        {
-            return function_exists('openssl_verify');
-        }
+    * Can server check signature received by paybox response ?
+    * 
+    * @return bool
+    */
+   protected function CheckSSL()
+   {
+       return function_exists('openssl_verify');
+   }
                 
 }
 ?>
