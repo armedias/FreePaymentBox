@@ -171,11 +171,16 @@ class Freepaymentbox extends PaymentModule {
         // vérifications
         if(!$this->CheckSSL()) {
             $this->_html .= $this->displayError( $this->l('Votre serveur ne dispose des fonctions openssl requises') );
+        }
+        if(!$this->CheckPublicKey()) {
+            $this->_html .= $this->displayError( $this->l('Vous n avez pas renseigné la clé public Paybox') );
+        }
+        
         // fin si erreurs
-        if($this->errors) { //  $this->displayError() a mis $this->errors à true ( ^^ ! SRP !)
+        if($this->error) { //  $this->displayError() a mis $this->error à true ( ^^ ! SRP !)
             return $this->_html;
         }
-
+        
         if (Tools::isSubmit('submitFreepaymentbox')) {
             $this->saveSettings();
         }
@@ -196,33 +201,51 @@ class Freepaymentbox extends PaymentModule {
     }
 
     /**
+     * Verification de la validité des données retournées.
+     * 
+     * D apres la doc la verification se fait ainsi :
+     * 
+     * 1. Récupérer le contenu de la donnée du type “K” (pour nous 'signature')
+     *  note : on a spécifié dans la var PBX_RETOUR du formulaire envoyé que la signature serait stocké dans la variable 'signature'
+     * 2. “URL décodée” cette signature, (pour nous : étape non visible, effectué par Tools::getValue()
+     * 3. Décoder en base 64 le résultat de l’étape précédente,
+     * 4. Décrypter avec la clé publique d'e-transactions le résultat de l’étape précédente,
+     * 5. Calculer une empreinte SHA-1 avec les autres données de la variable "PBX_RETOUR",
+     * 6. L’empreinte calculée dans l’étape précédente doit être égale au résultat de l’étape 4.
      * 
      * @return boolean
      */
     public static function verification_signature()
     {
-        $public_key = file_get_contents('pubkey.pem');
-        if ($public_key == false) {
+        if(!$pub_key = self::getPublic_key()) {
             return false;
         }
+        
         $signed_data = '';
 
-        $signature = Tools::getValue('signature');        // pas besoin de urldecode
+        // 1. Récupérer le contenu de la donnée du type “K” (pour nous 'signature')
+        // 2. “URL décodée” cette signature, (pour nous : étape non visible, effectué par Tools::getValue()
+        $signature = Tools::getValue('signature'); // applique le url_decode()
+        // 3. Décoder en base 64 le résultat de l’étape précédente,
         $signature = base64_decode($signature);
-
+        
+        // concaténation des données a vérifier (PBX_RETOUR sauf la signature)
         foreach ($_GET as $key => $val) {
             if ($key !== 'signature') {
                 $signed_data .= '&' . $key . '=' . $val;
             }
         }
-        $signed_data = substr($signed_data, 1);
-
-        if (openssl_verify($signed_data, $signature, $public_key))
-            return true;
-        else
-            return false;
+        $signed_data = substr($signed_data, 1); // suppression du premier '&'
+        // 4 , 5 et 6 par openssl_verify
+        return openssl_verify($signed_data, $signature, $pub_key );
     }
 
+    protected static function getPublic_Key()
+    {
+        $file_content = @file_get_contents(__DIR__.'/pubkey.pem');
+        return openssl_pkey_get_public($file_content);
+    }
+    
     /**
     * Can server check signature received by paybox response ?
     * 
@@ -232,6 +255,15 @@ class Freepaymentbox extends PaymentModule {
    {
        return function_exists('openssl_verify');
    }
-                
+          
+   /**
+    * Is paybox public key valid
+    * 
+    * @return bool
+    */
+   protected function CheckPublicKey()
+   {
+       return $this->getPublic_Key() !== false;
+   }
 }
 ?>
