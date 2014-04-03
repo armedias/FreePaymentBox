@@ -1,23 +1,33 @@
 <?php
-
-//
-// Module FreePaymentBox pour système de paiement en ligne Paybox 
-// Pour Prestashop 1.5.2 minimum
-// Version SHA512 ne nécessite pas de module CGI
-// version 0.01
-// A utiliser à vos risques et périls, aucune garantie, ni support n'est assuré.
-//
-
-
-// Récupération clé publique http://www1.paybox.com/telechargements/pubkey.pem
+/**
+ * FreePaymentBox
+ * 
+ * Module de paiement PayBox(TM) pour Prestashop (TM).
+ * 
+ * Fourni sans garantie.
+ * 
+ * @author Sébastien Monterisi   <sebastienmonterisi@yahoo.fr>  https://github.com/SebSept/FreePaymentBox   
+ * @author Jean-François MAGNIER <jf.magnier@gmail.com>         https://github.com/lefakir//FreePaymentBox
+ * @author ?@?                   <?>                            https://github.com/PrestaMath
+ * 
+ * @license http://www.gnu.org/licenses/gpl-3.0.txt GPL v3.0
+ */
 
 
 if (!defined('_PS_VERSION_')) {
 	exit;
 }
 
-class Freepaymentbox extends PaymentModule {
-	private $_html = '';
+/**
+ * Classe du module de paiement
+ */
+class Freepaymentbox extends PaymentModule 
+{
+    /**
+     * @var string stocke le html a afficher dans le formulaire d'administration
+     */
+    private $_html = '';
+    
         // url appel paybox classique
         private $pb_url; 
         //private $pb_config_lib = array('PBX_SITE','PBX_RANG','PBX_IDENTIFIANT','PBX_HASH','PBX_DEVISE','SECRET_KEY','MODE_PROD');
@@ -266,4 +276,3 @@ class Freepaymentbox extends PaymentModule {
        return $this->getPublic_Key() !== false;
         }
 }
-?>

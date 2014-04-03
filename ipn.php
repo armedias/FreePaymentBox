@@ -1,7 +1,23 @@
 <?php 
-//
-// confirmation de serveur à serveur du paiement (IPN instant payment notification)
-// 
+/**
+ * FreePaymentBox
+ * 
+ * Module de paiement PayBox(TM) pour Prestashop (TM).
+ * 
+ * Fourni sans garantie.
+ * 
+ * @author Sébastien Monterisi   <sebastienmonterisi@yahoo.fr>  https://github.com/SebSept/FreePaymentBox   
+ * @author Jean-François MAGNIER <jf.magnier@gmail.com>         https://github.com/lefakir//FreePaymentBox
+ * @author ?@?                   <?>                            https://github.com/PrestaMath
+ * 
+ * @license http://www.gnu.org/licenses/gpl-3.0.txt GPL v3.0
+ */
+
+/**
+ * Script appelé par le serveur paybox pour envoyer les réponses de transaction
+ * Acceptation/Refus/...
+
+ */
 require_once dirname(dirname(dirname(__FILE__))) . '/config/config.inc.php';
 require_once(dirname(__FILE__) . '/freepaymentbox.php');
 
