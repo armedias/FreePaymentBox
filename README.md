@@ -1,35 +1,38 @@
-FreePaymentBox
-==============
+# FreePaymentBox
 
-Module for using Paybox in Prestashop 1.5 with no CGI module required, SHA512 used 
 
-This is free software, and as such comes with NO WARRANTY.
+This is module to use Paybox Payment system for Prestashop.
 
-This is an adaptator of Paybox Payment system for Prestashop.
+Module for using Paybox in Prestashop 1.5.
 
-Version is now 0.01.
+No CGI module required, instead it use the HMAC verification method.
 
-It already works on a real shop with real money.
+It already works on a real shop with real money but need improvements (admin part at least)
 
-To works you need
-- php
+## Requirements
+
+- php (version ?)
 - openssl
-- a test account (provided by paybox) or a real customer test.
+- a test or a real customer account (provided by paybox) 
+- prestashop >= 1.5.2
+
+Documentation, test account and public key are provided by Paybox and are needed. Those are supplied in Paybox download section.
+
+## Todo
 
 Admin part of the module is pretty ugly at this time
 - mode_prod : 0 is for test, 1 is for production
 - pbx_hash : is to be set to SHA512
 
-Documentation, test account and public key are provided by Paybox and are needed. Those are supplied in Paybox download section.
 
-This module is not made by Paybox and has no relation with Point Transaction Systems. 
-Prestashop is not involved in this project.
+## DISCLAIMER
+
+This module is NOT made by Paybox and has no relation with Point Transaction Systems. 
+Prestashop is NOT involved in this project.
 
 Paybox, Point Transaction Systems and Prestashop are registred trademarks.
 
-Before asking or aguing, remember that module is 'FREE' and that no one 'PAY' me :) 
-
-Have a good journey
+This code provided as NO WARRANTY and is published under the ??? License.
 
 
 
