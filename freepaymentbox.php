@@ -52,7 +52,7 @@ class Freepaymentbox extends PaymentModule {
         }
         else
         {
-            $this->pb_url = array('0' => 'https://preprod-tpeweb.paybox.com/cgi/ChoixPaiementMobile.cgi',
+            $this->pb_url = array('0' => 'https://tpeweb.paybox.com/cgi/ChoixPaiementMobile.cgi',
             '1' => 'https://tpeweb.paybox.com/cgi/ChoixPaiementMobile.cgi',
             '2' => 'https://tpeweb1.paybox.com/cgi/ChoixPaiementMobile.cgi'
             );
