@@ -161,34 +161,43 @@ class Freepaymentbox extends PaymentModule {
 	}
 	
         
-        
-        public function getContent() {
-            // verifier si openssl est actif sur le serveur 
-		if (Tools::isSubmit('submitFreepaymentbox')) {
-			$this->saveSettings();
-		}
+    /**
+     * Admin form / page
+     * 
+     * @return string html code
+     */
+    public function getContent()
+    {
+        if(!$this->SSLCheck()) {
+            $this->_html .= $this->displayError( $this->l('Votre serveur ne dispose des fonctions openssl requises') );
+            return $this->_html;
+        }
 
-                $config = Configuration::getMultiple($this->pb_config);
-                $this->_html .='MOD_PROD : 0 test 1 production';
-                $this->_html .= '<form action="' . $_SERVER['REQUEST_URI']. '" method="post">';
-                
-                foreach ($this->pb_config as $setting_name){
-                    $this->_html .= '<div class="clear">'.$setting_name.
-                            '<input type="text" name="'.$setting_name.'" value="'.$config[$setting_name].'">
+        if (Tools::isSubmit('submitFreepaymentbox')) {
+            $this->saveSettings();
+        }
+
+        $config = Configuration::getMultiple($this->pb_config);
+        $this->_html .='MOD_PROD : 0 test 1 production';
+        $this->_html .= '<form action="' . $_SERVER['REQUEST_URI'] . '" method="post">';
+
+        foreach ($this->pb_config as $setting_name) {
+            $this->_html .= '<div class="clear">' . $setting_name .
+                    '<input type="text" name="' . $setting_name . '" value="' . $config[$setting_name] . '">
                              </div>';
-                }    
-                $this->_html .='<div class="clear"><input type="submit" class="button" name="submitFreepaymentbox" value="'
-				. $this->l('Save') . '" /></div>
+        }
+        $this->_html .='<div class="clear"><input type="submit" class="button" name="submitFreepaymentbox" value="'
+                . $this->l('Save') . '" /></div>
                                     </form>';
-		return $this->_html;
-	}
-        
-        public static function verification_signature(){
+        return $this->_html;
+    }
+
+    public static function verification_signature(){
             $public_key = file_get_contents('pubkey.pem');
             if ($public_key == false){return false;}
             $signed_data ='';
             
-           $signature =   Tools::getValue('signature');        // pas besoin de urldecode
+           $signature = Tools::getValue('signature');        // pas besoin de urldecode
            $signature = base64_decode($signature);
             
             foreach ($_GET as $key => $val){
@@ -204,5 +213,16 @@ class Freepaymentbox extends PaymentModule {
                return false;
                 
         }
+        
+        /**
+         * Can server check signature received by paybox response ?
+         * 
+         * @return bool
+         */
+        protected function SSLCheck()
+        {
+            return function_exists('openssl_verify');
+        }
+                
 }
 ?>
