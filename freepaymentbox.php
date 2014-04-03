@@ -237,7 +237,7 @@ class Freepaymentbox extends PaymentModule {
                 }
         $signed_data = substr($signed_data, 1); // suppression du premier '&'
         // 4 , 5 et 6 par openssl_verify
-        return openssl_verify($signed_data, $signature, $pub_key );
+        return openssl_verify($signed_data, $signature, $pub_key ) === 1;
     }
                       
     protected static function getPublic_Key()
