@@ -192,29 +192,35 @@ class Freepaymentbox extends PaymentModule {
         return $this->_html;
     }
 
-    public static function verification_signature(){
-            $public_key = file_get_contents('pubkey.pem');
-            if ($public_key == false){return false;}
-            $signed_data ='';
-            
-           $signature = Tools::getValue('signature');        // pas besoin de urldecode
-           $signature = base64_decode($signature);
-            
-            foreach ($_GET as $key => $val){
-                if ($key !== 'signature') {
-                        $signed_data .= '&' . $key . '=' . $val;
-                    }
-                }
-           $signed_data = substr($signed_data,1);     
-                      
-           if (openssl_verify( $signed_data, $signature, $public_key ))
-                return true;
-           else
-               return false;
-                
+    /**
+     * 
+     * @return boolean
+     */
+    public static function verification_signature()
+    {
+        $public_key = file_get_contents('pubkey.pem');
+        if ($public_key == false) {
+            return false;
         }
-        
-        /**
+        $signed_data = '';
+
+        $signature = Tools::getValue('signature');        // pas besoin de urldecode
+        $signature = base64_decode($signature);
+
+        foreach ($_GET as $key => $val) {
+            if ($key !== 'signature') {
+                $signed_data .= '&' . $key . '=' . $val;
+            }
+        }
+        $signed_data = substr($signed_data, 1);
+
+        if (openssl_verify($signed_data, $signature, $public_key))
+            return true;
+        else
+            return false;
+    }
+
+    /**
          * Can server check signature received by paybox response ?
          * 
          * @return bool
