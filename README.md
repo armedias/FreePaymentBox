@@ -32,7 +32,7 @@ Prestashop is NOT involved in this project.
 
 Paybox, Point Transaction Systems and Prestashop are registred trademarks.
 
-This code provided as NO WARRANTY and is published under the ??? License.
+This code provided as NO WARRANTY and is published under the [GPL v3 License](http://www.gnu.org/licenses/gpl-3.0.txt).
 
 
 
