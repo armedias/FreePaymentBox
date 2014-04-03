@@ -181,25 +181,25 @@ class Freepaymentbox extends PaymentModule {
             return $this->_html;
         }
         
-        if (Tools::isSubmit('submitFreepaymentbox')) {
-            $this->saveSettings();
-        }
+		if (Tools::isSubmit('submitFreepaymentbox')) {
+			$this->saveSettings();
+		}
 
-        $config = Configuration::getMultiple($this->pb_config);
-        $this->_html .='MOD_PROD : 0 test 1 production';
-        $this->_html .= '<form action="' . $_SERVER['REQUEST_URI'] . '" method="post">';
-
-        foreach ($this->pb_config as $setting_name) {
-            $this->_html .= '<div class="clear">' . $setting_name .
-                    '<input type="text" name="' . $setting_name . '" value="' . $config[$setting_name] . '">
+                $config = Configuration::getMultiple($this->pb_config);
+                $this->_html .='MOD_PROD : 0 test 1 production';
+                $this->_html .= '<form action="' . $_SERVER['REQUEST_URI']. '" method="post">';
+                
+                foreach ($this->pb_config as $setting_name){
+                    $this->_html .= '<div class="clear">'.$setting_name.
+                            '<input type="text" name="'.$setting_name.'" value="'.$config[$setting_name].'">
                              </div>';
-        }
-        $this->_html .='<div class="clear"><input type="submit" class="button" name="submitFreepaymentbox" value="'
-                . $this->l('Save') . '" /></div>
+                }    
+                $this->_html .='<div class="clear"><input type="submit" class="button" name="submitFreepaymentbox" value="'
+				. $this->l('Save') . '" /></div>
                                     </form>';
-        return $this->_html;
-    }
-
+		return $this->_html;
+	}
+        
     /**
      * Verification de la validité des données retournées.
      * 
@@ -221,31 +221,31 @@ class Freepaymentbox extends PaymentModule {
             return false;
         }
         
-        $signed_data = '';
-
+            $signed_data ='';
+            
         // 1. Récupérer le contenu de la donnée du type “K” (pour nous 'signature')
         // 2. “URL décodée” cette signature, (pour nous : étape non visible, effectué par Tools::getValue()
         $signature = Tools::getValue('signature'); // applique le url_decode()
         // 3. Décoder en base 64 le résultat de l’étape précédente,
-        $signature = base64_decode($signature);
-        
+           $signature = base64_decode($signature);
+            
         // concaténation des données a vérifier (PBX_RETOUR sauf la signature)
-        foreach ($_GET as $key => $val) {
-            if ($key !== 'signature') {
-                $signed_data .= '&' . $key . '=' . $val;
-            }
-        }
+            foreach ($_GET as $key => $val){
+                if ($key !== 'signature') {
+                        $signed_data .= '&' . $key . '=' . $val;
+                    }
+                }
         $signed_data = substr($signed_data, 1); // suppression du premier '&'
         // 4 , 5 et 6 par openssl_verify
         return openssl_verify($signed_data, $signature, $pub_key );
     }
-
+                      
     protected static function getPublic_Key()
     {
         $file_content = @file_get_contents(__DIR__.'/pubkey.pem');
         return openssl_pkey_get_public($file_content);
     }
-    
+                
     /**
     * Can server check signature received by paybox response ?
     * 
@@ -264,6 +264,6 @@ class Freepaymentbox extends PaymentModule {
    protected function CheckPublicKey()
    {
        return $this->getPublic_Key() !== false;
-   }
+        }
 }
 ?>
