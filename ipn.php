@@ -16,16 +16,11 @@
 /**
  * Script appelé par le serveur paybox pour envoyer les réponses de transaction
  * Acceptation/Refus/...
-
+ * 
+ * @todo opérer filtrage par adresse ip, puisque sont renseignées dans la doc.
  */
 require_once dirname(dirname(dirname(__FILE__))) . '/config/config.inc.php';
 require_once(dirname(__FILE__) . '/freepaymentbox.php');
-
-
-// check ip 194.2.122.158,195.25.7.166,195.101.99.76
-
-// ($_SERVER['REMOTE_ADDR'] == $authorized_ip
-// 
 
 // PBX_CMD contient
 //"montant:M;ref_cmd:R;autorisation:A;erreur:E";

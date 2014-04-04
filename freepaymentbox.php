@@ -30,12 +30,27 @@ class Freepaymentbox extends PaymentModule
     
         // url appel paybox classique
         private $pb_url; 
-        //private $pb_config_lib = array('PBX_SITE','PBX_RANG','PBX_IDENTIFIANT','PBX_HASH','PBX_DEVISE','SECRET_KEY','MODE_PROD');
-        private $pb_config = array('PBX_SITE','PBX_RANG','PBX_IDENTIFIANT','PBX_HASH','PBX_DEVISE','SECRET_KEY','MODE_PROD');
+    
+    /**
+     * Variable configurables (en admin)
+     * Les variables préfixés PBX seront incluses dans le formulaire de paiement soumis au site
+     * a condition de figurer dans 
+     * 
+     * PBX_DEVISE : identifiant de la devise - @see http://www.iso.org/iso/fr/home/standards/currency_codes.htm
+     * @todo documenter autres variables
+     * 
+     * @var array 
+     */
+    private $pb_config = array('PBX_SITE','PBX_RANG','PBX_IDENTIFIANT','PBX_HASH','PBX_DEVISE','SECRET_KEY','MODE_PROD');
         
+    /**
+     * @todo doc
+     * @var type 
+     */
+    private $pb_form  = array('PBX_SITE','PBX_RANG','PBX_IDENTIFIANT','PBX_HASH','PBX_DEVISE');
         
-        private $pb_form  = array('PBX_SITE','PBX_RANG','PBX_IDENTIFIANT','PBX_HASH','PBX_DEVISE');
-        private $pb_pay = array('PBX_TOTAL','PBX_CMD','PBX_PORTEUR','PBX_RETOUR','PBX_HASH','PBX_TIME','PBX_HMAC');
+    // commenté : inutilisé !
+    // private $pb_pay = array('PBX_TOTAL','PBX_CMD','PBX_PORTEUR','PBX_RETOUR','PBX_HASH','PBX_TIME','PBX_HMAC');
 
         
         private $url_customer = array('PBX_REFUSE','PBX_EFFECTUE','PBX_ANNULE');
@@ -102,6 +117,8 @@ class Freepaymentbox extends PaymentModule
         
         $config = Configuration::getMultiple($this->pb_config);
 
+        // inclusion dans le formulaire des variables configurables en admin
+        // seules les variables présentes dans $pb_form sont incluses
         foreach ($this->pb_config as $setting_name) {
             if (in_array($setting_name, $this->pb_form)) {
                 $pbx[$setting_name] = $config[$setting_name];
@@ -117,14 +134,18 @@ class Freepaymentbox extends PaymentModule
         // n'est probablement destiné qu'à l'appel par CGI
 //        $pbx['PBX_MODE'] = '1'; // 1=appel par formulaire html
         $pbx['PBX_TOTAL'] = (string) ($cart->getOrderTotal() * 100);
-        
+        // Adresse email de l’acheteur.
         $pbx['PBX_PORTEUR'] = (string) $this->context->customer->email;
+        // date , obligatoire avec la methode par clé HMAC
+        // formaté ISO8601, correspond à 'c' en php - http://www.php.net/manual/fr/function.date.php
         $pbx['PBX_TIME'] = date("c");
         // reférence. La commande est encore inexistante. Réference est donc <id_customer>_<id_cart>_<date(YmdHis>
         $pbx['PBX_CMD'] = (string) $this->context->customer->id . '_' . $id_cart . '_' . date('YmdHis');
-        // valeurs souhaitées en retour
+        // valeurs souhaitées en retour, 22 données possibles, voir doc paybox
         $pbx['PBX_RETOUR'] = "montant:M;ref_cmd:R;autorisation:A;erreur:E;signature:K";        // K doit etre en dernier position
+        // url réponse serveur
         $pbx['PBX_REPONDRE_A'] = Tools::getShopDomain(true) . __PS_BASE_URI__ . 'modules/freepaymentbox/ipn.php';
+        
         foreach ($this->url_customer as $url_customer) {
             $pbx[$url_customer] = Tools::getShopDomain(true) . __PS_BASE_URI__ . 'index.php?fc=module&module=freepaymentbox&controller=customerreturn&status=' . $url_customer;
         }
