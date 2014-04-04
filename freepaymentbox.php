@@ -118,10 +118,11 @@ class Freepaymentbox extends PaymentModule
 //        $pbx['PBX_MODE'] = '1'; // 1=appel par formulaire html
         $pbx['PBX_TOTAL'] = (string) ($cart->getOrderTotal() * 100);
         
-        $pbx['PBX_PORTEUR'] = (string) $this->context->cookie->email;
+        $pbx['PBX_PORTEUR'] = (string) $this->context->customer->email;
         $pbx['PBX_TIME'] = date("c");
-
-        $pbx['PBX_CMD'] = (string) $this->context->cookie->id_customer . '_' . $id_cart . '_' . date('YmdHis');   // ref de la commande : plutot de la référence de transaction
+        // reférence. La commande est encore inexistante. Réference est donc <id_customer>_<id_cart>_<date(YmdHis>
+        $pbx['PBX_CMD'] = (string) $this->context->customer->id . '_' . $id_cart . '_' . date('YmdHis');
+        // valeurs souhaitées en retour
         $pbx['PBX_RETOUR'] = "montant:M;ref_cmd:R;autorisation:A;erreur:E;signature:K";        // K doit etre en dernier position
         $pbx['PBX_REPONDRE_A'] = Tools::getShopDomain(true) . __PS_BASE_URI__ . 'modules/freepaymentbox/ipn.php';
         foreach ($this->url_customer as $url_customer) {
