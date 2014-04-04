@@ -85,67 +85,73 @@ class Freepaymentbox extends PaymentModule
             }
         }
 
-        public function hookPayment($params) {
-		/* @var $cart Cart */
-		$cart = $this->context->cart;
-                $pbx = array();
-                $config = Configuration::getMultiple($this->pb_config);         //
-                
-                foreach ($this->pb_config as $setting_name){
-                    if ( in_array($setting_name, $this->pb_form)){
-                    $pbx[$setting_name] = $config[$setting_name];}
-                }
-                
-                $id_cart= (string)$cart->id;
-                
-                $pbx['PBX_TOTAL'] = (string)($cart->getOrderTotal()*100);
-                $pbx['PBX_PORTEUR'] = (string)$this->context->cookie->email;
-                $pbx['PBX_TIME'] = date("c");
-                
-                $pbx['PBX_CMD'] =  (string)$this->context->cookie->id_customer.'_'.$id_cart.'_'.date('YmdHis');   // ref de la commande : plutot de la référence de transaction
-                $pbx['PBX_RETOUR'] =  "montant:M;ref_cmd:R;autorisation:A;erreur:E;signature:K";        // K doit etre en dernier position
-                $pbx['PBX_REPONDRE_A'] = Tools::getShopDomain(true).__PS_BASE_URI__.'modules/freepaymentbox/ipn.php';
-                foreach ($this->url_customer as $url_customer){
-                    $pbx[$url_customer] = Tools::getShopDomain(true).__PS_BASE_URI__.'index.php?fc=module&module=freepaymentbox&controller=customerreturn&status='.$url_customer;
-                }
-                
-                $msg ='';
-                foreach ($pbx as $key => $value){   // calcul du hash sans url encode
-                    $msg .= ($key == 'PBX_SITE' ? $key.'='.$value : '&'.$key.'='.$value);
-                }
-                
-//                 foreach ($this->url_customer as $url_customer){    // urlencode des urls retour,refuse,annule
-//                     $pbx[$url_customer] = urlencode($pbx[$url_customer]);
-//                }
-//          
-                // calcul du hmac
-          
-                
-                // On récupère la clé secrète HMAC (stockée dans une base de données par exemple) et que l’on renseigne dans la variable $keyTest;
-               $keyTest = $config['SECRET_KEY'];  // "ABDCDEF";
-               
-                // Si la clé est en ASCII, On la transforme en binaire
-                $binKey = pack("H*", $keyTest);
-                // On calcule l’empreinte (à renseigner dans le paramètre PBX_HMAC) grâce à la fonction hash_hmac et // la clé binaire
-                // On envoie via la variable PBX_HASH l'algorithme de hachage qui a été utilisé (SHA512 dans ce cas)
-                // Pour afficher la liste des algorithmes disponibles sur votre environnement, décommentez la ligne // suivante
-                 //print_r(hash_algos());
-                $hmac = strtoupper(hash_hmac('sha512', $msg, $binKey));
-                // La chaîne sera envoyée en majuscules, d'où l'utilisation de strtoupper()
+    /**
+     * Affichage sur la page paiement
+     * 
+     * Genere le formulaire pour la soumission a PayBox
+     * 
+     * @param array $params
+     * @return string   Contenu html à afficher
+     */
+    public function hookPayment($params)
+    {
+        $cart = $this->context->cart;
+        $pbx = array();
+        $config = Configuration::getMultiple($this->pb_config);         //
 
-                 $pbx['PBX_HMAC'] = $hmac;
-                 
-                /* foreach($pbx as $key => $value){
-                     $pbx[$key] = urlencode($pbx[$key]);
-                 }*/
-                $this->context->smarty->assign('pbx',$pbx);
+        foreach ($this->pb_config as $setting_name) {
+            if (in_array($setting_name, $this->pb_form)) {
+                $pbx[$setting_name] = $config[$setting_name];
+            }
+        }
 
-                $this->context->smarty->assign('pbx_url_form',$this->pb_url[$config['MODE_PROD']]);
+        $id_cart = (string) $cart->id;
 
-		return $this->display(__FILE__, 'payment.tpl'); // si probleme ne pas retourner de tpl pour ne rien afficher
-	}
-	
-	/**
+        $pbx['PBX_TOTAL'] = (string) ($cart->getOrderTotal() * 100);
+        $pbx['PBX_PORTEUR'] = (string) $this->context->cookie->email;
+        $pbx['PBX_TIME'] = date("c");
+
+        $pbx['PBX_CMD'] = (string) $this->context->cookie->id_customer . '_' . $id_cart . '_' . date('YmdHis');   // ref de la commande : plutot de la référence de transaction
+        $pbx['PBX_RETOUR'] = "montant:M;ref_cmd:R;autorisation:A;erreur:E;signature:K";        // K doit etre en dernier position
+        $pbx['PBX_REPONDRE_A'] = Tools::getShopDomain(true) . __PS_BASE_URI__ . 'modules/freepaymentbox/ipn.php';
+        foreach ($this->url_customer as $url_customer) {
+            $pbx[$url_customer] = Tools::getShopDomain(true) . __PS_BASE_URI__ . 'index.php?fc=module&module=freepaymentbox&controller=customerreturn&status=' . $url_customer;
+        }
+
+        $msg = '';
+        foreach ($pbx as $key => $value) {   // calcul du hash sans url encode
+            $msg .= ($key == 'PBX_SITE' ? $key . '=' . $value : '&' . $key . '=' . $value);
+        }
+
+        //                 foreach ($this->url_customer as $url_customer){    // urlencode des urls retour,refuse,annule
+        //                     $pbx[$url_customer] = urlencode($pbx[$url_customer]);
+        //                }
+        //          
+        // calcul du hmac
+        // On récupère la clé secrète HMAC (stockée dans une base de données par exemple) et que l’on renseigne dans la variable $keyTest;
+        $keyTest = $config['SECRET_KEY'];  // "ABDCDEF";
+        // Si la clé est en ASCII, On la transforme en binaire
+        $binKey = pack("H*", $keyTest);
+        // On calcule l’empreinte (à renseigner dans le paramètre PBX_HMAC) grâce à la fonction hash_hmac et // la clé binaire
+        // On envoie via la variable PBX_HASH l'algorithme de hachage qui a été utilisé (SHA512 dans ce cas)
+        // Pour afficher la liste des algorithmes disponibles sur votre environnement, décommentez la ligne // suivante
+        //print_r(hash_algos());
+        $hmac = strtoupper(hash_hmac('sha512', $msg, $binKey));
+        // La chaîne sera envoyée en majuscules, d'où l'utilisation de strtoupper()
+
+        $pbx['PBX_HMAC'] = $hmac;
+
+        /* foreach($pbx as $key => $value){
+          $pbx[$key] = urlencode($pbx[$key]);
+          } */
+        $this->context->smarty->assign('pbx', $pbx);
+
+        $this->context->smarty->assign('pbx_url_form', $this->pb_url[$config['MODE_PROD']]);
+
+        return $this->display(__FILE__, 'payment.tpl'); // si probleme ne pas retourner de tpl pour ne rien afficher
+    }
+
+    /**
 	 *  Page pour le client de retour de la banque
 	 * @param array $params
 	 */
