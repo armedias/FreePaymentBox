@@ -107,7 +107,14 @@ class Freepaymentbox extends PaymentModule
 
         $id_cart = (string) $cart->id;
 
+        // La documentation indique que ce paramètre est obligatoire
+        // mais cela doit concerner uniquement l'appel par CGI
+        // fonctionne sans et n'est spécifié dans l'exemple de l' "ANNEXE TECHNIQUE : Appel par clé HMAC",
+        // ni dans le fichier php d'exemple.
+        // n'est probablement destiné qu'à l'appel par CGI
+//        $pbx['PBX_MODE'] = '1'; // 1=appel par formulaire html
         $pbx['PBX_TOTAL'] = (string) ($cart->getOrderTotal() * 100);
+        
         $pbx['PBX_PORTEUR'] = (string) $this->context->cookie->email;
         $pbx['PBX_TIME'] = date("c");
 
