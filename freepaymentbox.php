@@ -95,9 +95,12 @@ class Freepaymentbox extends PaymentModule
      */
     public function hookPayment($params)
     {
-        $cart = $this->context->cart;
+        // tableau des variables du formulaire soumis a Paybox
         $pbx = array();
-        $config = Configuration::getMultiple($this->pb_config);         //
+        // panier , contient les informations pour réaliser la commande
+        $cart = $this->context->cart;
+        
+        $config = Configuration::getMultiple($this->pb_config);
 
         foreach ($this->pb_config as $setting_name) {
             if (in_array($setting_name, $this->pb_form)) {
