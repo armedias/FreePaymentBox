@@ -140,6 +140,7 @@ class Freepaymentbox extends PaymentModule
         // formaté ISO8601, correspond à 'c' en php - http://www.php.net/manual/fr/function.date.php
         $pbx['PBX_TIME'] = date("c");
         // reférence. La commande est encore inexistante. Réference est donc <id_customer>_<id_cart>_<date(YmdHis>
+        // @todo centratliser (cf extraction dans ipn.php)
         $pbx['PBX_CMD'] = (string) $this->context->customer->id . '_' . $id_cart . '_' . date('YmdHis');
         // valeurs souhaitées en retour, 22 données possibles, voir doc paybox
         $pbx['PBX_RETOUR'] = "montant:M;ref_cmd:R;autorisation:A;erreur:E;signature:K";        // K doit etre en dernier position
