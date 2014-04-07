@@ -51,16 +51,16 @@ $success = false;
 $message;
 
 // variables récupérées dans l'url. Démandées par le param PBX_RETOUR du formulaire
-$montant = (int) Tools::getValue('montant');
-$ref_cmd =  Tools::getValue('ref_cmd');
-$autorisation = Tools::getValue('autorisation');
-$erreur = Tools::getValue('erreur');
+$param_montant = (int) Tools::getValue('montant');
+$param_ref_cmd =  Tools::getValue('ref_cmd');
+$param_autorisation = Tools::getValue('autorisation');
+$param_erreur = Tools::getValue('erreur');
 
-// extraction des données passées groupées dans le param $ref_cmd
+// extraction des données passées groupées dans le param $param_ref_cmd
 // @todo création et extration devraient être centralisé la classe du module pour limiter les risques d'incohérences
 // format : <id_customer>_<id_cart>_<date(YmdHis>
 $id_customer = $id_cart = $timestamp = NULL;
-list($id_customer,$id_cart,$timestamp) = explode('_',$ref_cmd);
+list($id_customer,$id_cart,$timestamp) = explode('_',$param_ref_cmd);
 
 $cart = new Cart($id_cart);
 
@@ -93,22 +93,22 @@ if ($montant >0 && $montant == (int)$montant_panier && $erreur == '00000'){
 }
 else
 {
-    if ($montant >0 && $erreur == '00000'){     // paiement mais différent du montant du panier 
+    if ($param_montant >0 && $param_erreur == '00000'){     // paiement mais différent du montant du panier 
         $pb->validateOrder(
                 $id_cart, 
                 _PS_OS_PAYMENT_, 
-                $montant/100, 
+                $param_montant/100, 
                 'Paybox', 
-                "Paybox autorisation : $autorisation <br>Code $erreur",
-                array('transaction_id' => $ref_cmd),
+                "Paybox autorisation : $param_autorisation <br>Code $param_erreur",
+                array('transaction_id' => $param_ref_cmd),
                 null, //$currency_special
                 false, // $dont_touch_amount
                 $cart->secure_key ? $cart->secure_key : false  // $secure_key - in case there is no secure_key in cart, set to false to validate order anyway
         );
-        Logger::addLog("Retour banque client $id_customer panier $id_cart pour montant $montant <> montant panier $montant_panier" , 2, $erreur);
+        Logger::addLog("Retour banque client $id_customer panier $id_cart pour montant $param_montant <> montant panier $montant_panier" , 2, $param_erreur);
     }
     else {
-        Logger::addLog("Retour banque client $id_customer panier $id_cart pour montant $montant_panier" , 2, $erreur);
+        Logger::addLog("Retour banque client $id_customer panier $id_cart pour montant $montant_panier" , 2, $param_erreur);
     }
 }
 echo '<html><head></head><body></body></html>';     // doit répondre par une page 'html vide', ça marche comme ça ??? sinon on recoit des mails 'Warning'
