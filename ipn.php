@@ -98,12 +98,12 @@ if($param_autorisation === 'XXXXXX')
 
 // enregistrement de la commande
 if($success) {
-    $order_state = Configuration::get('_PS_OS_PAYMENT_');
+    $order_state = Configuration::get('PS_OS_PAYMENT');
     $message .= 'Paiement validé. Paramètres reçus : '.$param_url;
     Logger::addLog($message.' / '.$param_url , 1);
 }
 else {
-    $order_state = Configuration::get('_PS_OS_ERROR_');
+    $order_state = Configuration::get('PS_OS_ERROR');
 }
 
 $payment_module = new Freepaymentbox();
