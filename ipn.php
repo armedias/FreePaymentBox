@@ -7,7 +7,7 @@
  * Fourni sans garantie.
  * 
  * @author Sébastien Monterisi   <sebastienmonterisi@yahoo.fr>  https://github.com/SebSept/FreePaymentBox   
- * @author Jean-François MAGNIER <jf.magnier@gmail.com>         https://github.com/lefakir//FreePaymentBox
+ * @author Jean-François MAGNIER <jf.magnier@gmail.com>         https://github.com/lefakir/FreePaymentBox
  * @author ?@?                   <?>                            https://github.com/PrestaMath
  * 
  * @license http://www.gnu.org/licenses/gpl-3.0.txt GPL v3.0
@@ -30,7 +30,7 @@ require_once(dirname(__FILE__) . '/freepaymentbox.php');
 $success = true;
 
 /**
- * Message enregistré avec la commande
+ * Message enregistré avec la commande / dans le log
  * @var string
  */
 $message;
@@ -150,7 +150,7 @@ if($success) {
  */
 function miseEnEchec($p_message, $p_niveau_erreur=2)
 {
-    global $success, $message;
+    global $success, $message, $param_url;
     // modif var globales
     $success = false;
     $message .= $p_message;
