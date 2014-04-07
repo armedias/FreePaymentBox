@@ -20,22 +20,6 @@
  * @todo opérer filtrage par adresse ip, puisque sont renseignées dans la doc.
  */
 
-//A l'appel des urls de retour (PBX_EFFECTUE, PBX_REFUSE, PBX_ANNULE et « l’url http
-//directe »), ces variables seront concaténées à la fin de la manière suivante :
-//http://www.commerce.fr/cgi/verif_pmt.asp?ref=abc12&trans=71256&auto=30258&tarif=2000&abonnement=354341
-//&pays=FRA&erreur=00000
-//Il vous faudra alors vérifier impérativement le numéro d’autorisation, le code erreur, le montant
-//et la signature électronique : si le numéro d’autorisation existe (dans l’exemple précédent il est
-//égale à 30258), que le code erreur est égal à « 00000 », que le montant est identique au
-//montant d’origine et que la signature électronique est vérifié, cela signifie que le paiement est
-//accepté. Pour le cas d’un paiement refusé, le numéro d’autorisation est inexistant (exemple ci-
-//dessous). Vous pouvez également utiliser pour cela la variable E.
-//http://www.commerce.fr/cgi/verif_pmt.asp?ref=abc12&trans=71256&tarif=2000&pays=FRA&erreur=00105
-//
-//Par ailleurs, un numéro d’autorisation composé de “XXXXXX” signifie qu’il s’agit d’une
-//transaction de tests pour laquelle il n’y a pas eu de demande d’autorisation auprès de la
-//banque du commerçant.
-
 require_once dirname(dirname(dirname(__FILE__))) . '/config/config.inc.php';
 require_once(dirname(__FILE__) . '/freepaymentbox.php');
 
@@ -43,12 +27,19 @@ require_once(dirname(__FILE__) . '/freepaymentbox.php');
  * Retour serveur indique que la transaction est effectuée avec succes
  * @var bool
  */
-$success = false;
+$success = true;
+
 /**
  * Message enregistré avec la commande
  * @var string
  */
 $message;
+
+// ensemble param url (pour debugage/surveillance)
+$param_url = '';
+foreach($_GET as $k => $v) {
+    $param_url .= urldecode($k).'='.urldecode($v).' ';
+}
 
 // variables récupérées dans l'url. Démandées par le param PBX_RETOUR du formulaire
 $param_montant = (int) Tools::getValue('montant');
@@ -62,53 +53,100 @@ $param_erreur = Tools::getValue('erreur');
 $id_customer = $id_cart = $timestamp = NULL;
 list($id_customer,$id_cart,$timestamp) = explode('_',$param_ref_cmd);
 
+// @todo sécurité et vérif sur les paramètres extraits
 $cart = new Cart($id_cart);
 
-$montant_panier = $cart->getOrderTotal(true) *100;
-$pb = new Freepaymentbox();
+// --- verifications ---
 
-// si montant cart et paiement égale alors
-// code erreur 00000 = ok sinon ko
-
-// check signature
+// vérification signature
 if(!Freepaymentbox::verification_signature()){
-    Logger::addLog("Signature banque invalide id_cart = $id_cart" , 4, $erreur);
-    throw new Exception('Signature banque invalide');
-    exit(); // just in case exception catched and ignored !
-    // @todo should we mark the order invalid ?
+    miseEnEchec('Signature banque invalide', 4);
 }
 
-if ($montant >0 && $montant == (int)$montant_panier && $erreur == '00000'){
-    $pb->validateOrder(
-            $id_cart,           // $id_cart
-            _PS_OS_PAYMENT_,    // $id_order_state
-            $montant/100, 
-            'Paybox', 
-            "Paybox autorisation : $autorisation <br>Code $erreur ",
-            array('transaction_id' => $ref_cmd),
-            null, //$currency_special
-            false, // $dont_touch_amount
-            $cart->secure_key ? $cart->secure_key : false  // $secure_key - in case there is no secure_key in cart, set to false to validate order anyway
-        );
-}
-else
+// vérification numéro autorisation
+if(is_null($param_autorisation))
 {
-    if ($param_montant >0 && $param_erreur == '00000'){     // paiement mais différent du montant du panier 
-        $pb->validateOrder(
-                $id_cart, 
-                _PS_OS_PAYMENT_, 
-                $param_montant/100, 
-                'Paybox', 
-                "Paybox autorisation : $param_autorisation <br>Code $param_erreur",
-                array('transaction_id' => $param_ref_cmd),
-                null, //$currency_special
-                false, // $dont_touch_amount
-                $cart->secure_key ? $cart->secure_key : false  // $secure_key - in case there is no secure_key in cart, set to false to validate order anyway
-        );
-        Logger::addLog("Retour banque client $id_customer panier $id_cart pour montant $param_montant <> montant panier $montant_panier" , 2, $param_erreur);
-    }
-    else {
-        Logger::addLog("Retour banque client $id_customer panier $id_cart pour montant $montant_panier" , 2, $param_erreur);
-    }
+    miseEnEchec('Numéro autorisation nul - Paiement non valide');
 }
-echo '<html><head></head><body></body></html>';     // doit répondre par une page 'html vide', ça marche comme ça ??? sinon on recoit des mails 'Warning'
+
+// vérification code erreur
+if($param_erreur != '00000 ')
+{
+    miseEnEchec("Echec de la transaction. Code erreur $param_erreur");
+}
+
+// vérification du montant - montant payé = montant de la commande
+if($param_montant != ($cart->getOrderTotal(true) *100) )
+{
+    miseEnEchec('Montants paiement et panier différents (panier: '.$cart->getOrderTotal(true).' payé: .'.($param_montant/100).')');
+}
+
+// indication mode test
+// ajout au message qu'il s'agit d'un numéro d'autorisation en mode test
+if($param_autorisation === 'XXXXXX')
+{
+     $message .= 'Paiement fictif ( mode test )';
+}
+
+// enregistrement de la commande
+if($success) {
+    $order_state = Configuration::get('_PS_OS_PAYMENT_');
+    $message .= 'Paiement validé. Paramètres reçus : '.$param_url;
+    Logger::addLog($message.' / '.$param_url , 1);
+}
+else {
+    $order_state = Configuration::get('_PS_OS_ERROR_');
+}
+
+$payment_module = new Freepaymentbox();
+
+$payment_module->validateOrder(
+        $id_cart,           // $id_cart
+        $order_state,    // $id_order_state
+        $param_montant/100, 
+        'Paybox (Freepaymentbox)', 
+        $message,
+        array('transaction_id' => $param_ref_cmd),
+        null, //$currency_special
+        false, // $dont_touch_amount
+        $cart->secure_key ? $cart->secure_key : false  // $secure_key - in case there is no secure_key in cart, set to false to validate order anyway
+    );
+
+
+if($success) {  
+    // réponse par page html vide 
+    echo '<html><head></head><body></body></html>';
+} else {
+    // réponse par page html avec message erreur (provoque envoi de mail par paybox (non vérifié)) 
+   echo '<html><head></head><body>Erreur</body></html>'; 
+}
+
+/**
+ * fonctions locales
+ */
+
+/**
+ * Mise en echec du paiement
+ * 
+ * Ne provoque pas l'echec directement, l'indique.
+ * 
+ * Passe globale $success à False
+ * Ajoute param message dans globale $message
+ * Log erreur
+ * 
+ * @global $message
+ * @global $success
+ * @global $param_url
+ * @param string $message
+ * @param int    $niveau_erreur niveau d'erreur pour le Logger
+ */
+function miseEnEchec($p_message, $p_niveau_erreur=2)
+{
+    global $success, $message;
+    // modif var globales
+    $success = false;
+    $message .= $p_message;
+    
+    // enregistrement dans le log PS
+    Logger::addLog($p_message.' / '.$param_url , 4);
+}
