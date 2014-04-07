@@ -49,14 +49,22 @@ $param_erreur = Tools::getValue('erreur');
 
 // extraction des données passées groupées dans le param $param_ref_cmd
 // @todo création et extration devraient être centralisé la classe du module pour limiter les risques d'incohérences
-// format : <id_customer>_<id_cart>_<date(YmdHis>
-$id_customer = $id_cart = $timestamp = NULL;
-list($id_customer,$id_cart,$timestamp) = explode('_',$param_ref_cmd);
+// format : <id_customer>_<id_cart>_<date(YmdHis)>
+$id_customer = $id_cart = $date = NULL;
+list($id_customer,$id_cart,$date) = explode('_',$param_ref_cmd);
+$id_customer = (int) $id_customer;
+$id_cart = (int) $id_cart;
 
-// @todo sécurité et vérif sur les paramètres extraits
 $cart = new Cart($id_cart);
 
 // --- verifications ---
+
+// verification que cart retrouvé
+if(!Validate::isLoadedObject($cart)){
+    Logger::addLog('Paiement Paybox (Freepaymentbox) : Paiement sur Cart inexistant ! '.$param_url , 4);
+    echo '<html><head></head><body>Erreur 1</body></html>'; 
+    exit(1);
+}
 
 // vérification signature
 if(!Freepaymentbox::verification_signature()){
@@ -118,7 +126,7 @@ if($success) {
     echo '<html><head></head><body></body></html>';
 } else {
     // réponse par page html avec message erreur (provoque envoi de mail par paybox (non vérifié)) 
-   echo '<html><head></head><body>Erreur</body></html>'; 
+   echo '<html><head></head><body>Erreur 2</body></html>'; 
 }
 
 /**
