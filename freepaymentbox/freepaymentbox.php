@@ -87,12 +87,18 @@ class Freepaymentbox extends PaymentModule
 		$this->description = $this->l('Free to use and free of charge paybox payment toolkit adaptation');
 	}
 
-        public function install() {
-		if (!parent::install() || !$this->registerHook('payment') || !$this->registerHook('paymentReturn')) {
-			return false;
-		}
-		return true;
-	}
+    /**
+     * Installation 
+     * 
+     * @return boolean
+     */
+    public function install() 
+    {
+        return parent::install() 
+                && $this->registerHook('payment') 
+                && $this->registerHook('paymentReturn')
+                && $this->addOrderState();
+    }
         
         private function saveSettings(){
             foreach ($this->pb_config as $setting_name){
@@ -305,13 +311,46 @@ class Freepaymentbox extends PaymentModule
        return function_exists('openssl_verify');
    }
           
-   /**
-    * Is paybox public key valid
-    * 
-    * @return bool
-    */
-   protected function CheckPublicKey()
-   {
-       return $this->getPublic_Key() !== false;
+    /**
+     * Is paybox public key valid
+     * 
+     * @return bool
+     */
+    protected function CheckPublicKey()
+    {
+        return $this->getPublic_Key() !== false;
+    }
+    
+    /**
+     * Ajout du status 'En attente de confirmation de paiement (Freepaymentbox)'
+     * 
+     * - Créer le status
+     * - Stock id du status créé dans config PBX_PENDING_STATUS
+     * 
+     * Pour permettre la création de la commande dès le retour du client sur le site
+     * 
+     * @return bool
+     */
+    private function addOrderState()
+    {
+        $os = new OrderState(null, Configuration::get('PS_LANG_DEFAULT'));
+        $os->name = 'En attente de confirmation de paiement (Freepaymentbox)';
+        $os->send_email = false;
+	$os->module_name = $this->name;
+        $os->invoice = false;
+        $os->color = 'DarkGreen';
+        $os->unremovable = true;
+        $os->logable = true;
+        $os->delivery = false;
+        $os->hidden = false;
+        $os->shipped = false;
+        $os->paid = false;
+	$deleted = false;
+        
+        if($os->save()) {
+            return Configuration::updateValue('PBX_PENDING_STATUS',  $os->id);
         }
+        
+        return false;
+    }
 }
