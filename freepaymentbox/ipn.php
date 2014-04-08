@@ -17,11 +17,15 @@
  * Script appelé par le serveur paybox pour envoyer les réponses de transaction
  * Acceptation/Refus/...
  * 
- * @todo opérer filtrage par adresse ip, puisque sont renseignées dans la doc.
  */
 
 require_once dirname(dirname(dirname(__FILE__))) . '/config/config.inc.php';
 require_once(dirname(__FILE__) . '/freepaymentbox.php');
+
+/**
+ * @var array IPs autorisées
+ */
+$AUTHORIZED_IP = array('195.101.99.76',' 194.2.122.158', '195.25.7.166', '127.0.0.1');
 
 /**
  * Retour serveur indique que la transaction est effectuée avec succes
@@ -41,6 +45,15 @@ $errors_count = 0;
  * @var string
  */
 $message = '';
+
+
+// filtrage par adresse IP
+$ip = $_SERVER['REMOTE_ADDR'];
+
+if(!in_array($ip, $AUTHORIZED_IP)) {
+    header('Unauthorized', true, 401);
+    exit();
+}
 
 // ensemble param url (pour debugage/surveillance)
 $param_url = '';
