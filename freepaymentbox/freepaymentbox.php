@@ -53,7 +53,7 @@ class Freepaymentbox extends PaymentModule
     // private $pb_pay = array('PBX_TOTAL','PBX_CMD','PBX_PORTEUR','PBX_RETOUR','PBX_HASH','PBX_TIME','PBX_HMAC');
 
         
-        private $url_customer = array('PBX_REFUSE','PBX_EFFECTUE','PBX_ANNULE');
+    private $url_customer = array('PBX_REFUSE','PBX_EFFECTUE','PBX_ANNULE');
 
         
 	public function __construct() {
@@ -153,10 +153,14 @@ class Freepaymentbox extends PaymentModule
         // url réponse serveur
         $pbx['PBX_REPONDRE_A'] = Tools::getShopDomain(true) . __PS_BASE_URI__ . 'modules/freepaymentbox/ipn.php';
         
-        foreach ($this->url_customer as $url_customer) {
-            $pbx[$url_customer] = Tools::getShopDomain(true) . __PS_BASE_URI__ . 'index.php?fc=module&module=freepaymentbox&controller=customerreturn&status=' . $url_customer;
-        }
-
+        // 'PBX_REFUSE','PBX_EFFECTUE','PBX_ANNULE' - cf $url_customer
+        $pbx['PBX_REFUSE'] = Tools::getShopDomain(true) . __PS_BASE_URI__ . 'index.php?fc=module&module=freepaymentbox&controller=customerreturn&status=PBX_REFUSE';
+        
+        $pbx['PBX_ANNULE'] = Tools::getShopDomain(true) . __PS_BASE_URI__ . 'index.php?fc=module&module=freepaymentbox&controller=customerreturn&status=PBX_ANNULE';
+        
+        $digest = hash_hmac('MD5', $id_cart.$pbx['PBX_TOTAL'], $cart->secure_key);
+        $pbx['PBX_EFFECTUE'] = Tools::getShopDomain(true) . __PS_BASE_URI__ . 'index.php?fc=module&module=freepaymentbox&controller=customerreturn&status=PBX_EFFECTUE&id_cart='.$id_cart.'&total='.$pbx['PBX_TOTAL'].'&digest='.$digest  ;
+         
         $msg = '';
         foreach ($pbx as $key => $value) {   // calcul du hash sans url encode
             $msg .= ($key == 'PBX_SITE' ? $key . '=' . $value : '&' . $key . '=' . $value);

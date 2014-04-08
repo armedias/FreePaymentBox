@@ -123,6 +123,8 @@ if($param_autorisation === 'XXXXXX')
 // commande déjà enregistrée - cas existant ?
 if($cart->OrderExists())
 {
+    // verifier montant de la commande avant changement de status
+    
     // si une seule erreur, si il s'agit du param erreur et que $param_erreur correspond a l'erreur 'paiement déjà effectué'), on ignore cette réponse serveur
     if( ($errors_count == 1 && $param_erreur === '00015') 
          ||  $errors_count == 0  
