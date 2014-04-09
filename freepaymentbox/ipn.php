@@ -89,9 +89,9 @@ if(!Validate::isLoadedObject($cart)){
 // --- vérification validité du paiement --- (cf doc paybox)
 
 // vérification signature
-if(!Freepaymentbox::verification_signature()){
-    miseEnEchec('Signature banque invalide', 4);
-}
+//if(!Freepaymentbox::verification_signature()){
+//    miseEnEchec('Signature banque invalide', 4);
+//}
 
 // vérification numéro autorisation
 if(is_null($param_autorisation))
@@ -123,12 +123,56 @@ if($param_autorisation === 'XXXXXX')
 // commande déjà enregistrée - cas existant ?
 if($cart->OrderExists())
 {
-    // verifier montant de la commande avant changement de status
-    
+    // commande déjà existante, status 'en attente de confirmation du paiement'
+    if($errors_count == 0)
+    {
+        $order = new Order( Order::getOrderByCartId($cart->id) );
+        if(Validate::isLoadedObject($order))
+        {
+            // verifier montant de la commande avant changement de status
+            if($order->getTotalPaid() != $cart->getOrderTotal(true))
+            {
+                $message .= 'Retour serveur (4) sur panier/commande existante. Montants incohérents. '
+                        . 'order: '.$order->getTotalPaid()
+                        . 'cart:  '.$cart->getOrderTotal(true)
+                        .$param_url;
+                Logger::addLog($message.' / '.$param_url , 4);
+
+                // Affichage d'un erreur pour être averti par PayBox
+                echo '<html><head></head><body>Erreur 6</body></html>';
+                exit();
+            }
+            else
+            {
+                Context::getContext()->employee = new Employee(1); // dirty hack - sinon mail alert pete un plomb :/
+                // ajout d'un order history
+                $history = new OrderHistory();
+                $history->id_order = (int)$order->id;
+                $history->changeIdOrderState( Configuration::get('PS_OS_PAYMENT'), (int)($order->id)); 
+
+                // ajout d'un message
+                $message .= ' Paiement validé. Paramètres reçus : '.$param_url;
+                $order_message = new Message();
+                $order_message->message = $message;
+                $order_message->id_order = (int)$order->id;
+                $order_message->save();
+            }
+            
+            echo '<html><head></head><body></body></html>';
+            exit();
+        }
+        else
+        {
+            $message .= 'Retour serveur (3) sur panier/commande existante. Commande non chargée. '.$param_url;
+            Logger::addLog($message.' / '.$param_url , 4);
+        
+            // Affichage d'un erreur pour être averti par PayBox
+            echo '<html><head></head><body>Erreur 5</body></html>';
+            exit();
+        }
+    }
     // si une seule erreur, si il s'agit du param erreur et que $param_erreur correspond a l'erreur 'paiement déjà effectué'), on ignore cette réponse serveur
-    if( ($errors_count == 1 && $param_erreur === '00015') 
-         ||  $errors_count == 0  
-            )
+    elseif( $errors_count == 1 && $param_erreur === '00015')
     {
         $message .= 'Retour serveur (1) sur panier/commande existante. '.$param_url;
         Logger::addLog($message.' / '.$param_url , 2);
@@ -176,10 +220,16 @@ else // enregistrement de la commande
     {
         miseEnEchec('Echec ValidateOrder', 5);
         echo '<html><head></head><body>Erreur 2</body></html>'; 
-        echo $message;
         exit();
     }
-    echo '<html><head></head><body></body></html>';
+    elseif(!$success) 
+    {
+        echo '<html><head></head><body>Erreur 0</body></html>'; 
+        exit();
+    }
+    else {
+        echo '<html><head></head><body></body></html>';
+    }
 }
 
 
@@ -215,3 +265,12 @@ function miseEnEchec($p_message, $p_niveau_erreur=2)
     // enregistrement dans le log PS
     Logger::addLog($p_message.' / '.$param_url , 4);
 }
+
+/*
+ DELETE FROM `ps_orders` WHERE `id_order` > 427;
+DELETE FROM ps_order_history WHERE `id_order` > 427;
+DELETE FROM ps_order_carrier WHERE `id_order` > 427;
+DELETE FROM ps_order_detail WHERE `id_order` > 427;
+DELETE FROM ps_order_invoice WHERE `id_order` > 427;
+DELETE FROM ps_order_invoice_payment WHERE `id_order` > 427;
+ */
