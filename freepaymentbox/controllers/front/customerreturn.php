@@ -35,11 +35,12 @@ class FreepaymentboxCustomerreturnModuleFrontController extends ModuleFrontContr
                     $cart = new Cart($id_cart_param);
                     if(Validate::isLoadedObject($cart))
                     {
-                        // le cart a la meme clé de sécurité que l'utilisateur courant
-                        if($this->context->customer->secure_key === $cart->secure_key)
+                        // le cart n'a pas fait l'objet d'une commande - retour ipn, sinon, rien
+                        if(!$cart->orderExists())
                         {
-                            // le cart n'a pas fait l'objet d'une commande
-                            if(!$cart->orderExists())
+                            
+                            // le cart a la meme clé de sécurité que l'utilisateur courant
+                            if($this->context->customer->secure_key === $cart->secure_key)
                             {
                                 // verif de la cohérence des digest (pour voir si id_cart et/ ou montant a été modifié)
                                 // normalement cart ne plus être modifié puisqu'il a été dupliqué
