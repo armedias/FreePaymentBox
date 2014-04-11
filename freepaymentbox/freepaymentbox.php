@@ -20,6 +20,8 @@ if (!defined('_PS_VERSION_')) {
 
 /**
  * Classe du module de paiement
+ * 
+ * @todo désinstallation : supprimer le status créé à l'installation
  */
 class Freepaymentbox extends PaymentModule 
 {
@@ -53,7 +55,7 @@ class Freepaymentbox extends PaymentModule
     // private $pb_pay = array('PBX_TOTAL','PBX_CMD','PBX_PORTEUR','PBX_RETOUR','PBX_HASH','PBX_TIME','PBX_HMAC');
 
         
-        private $url_customer = array('PBX_REFUSE','PBX_EFFECTUE','PBX_ANNULE');
+    private $url_customer = array('PBX_REFUSE','PBX_EFFECTUE','PBX_ANNULE');
 
         
 	public function __construct() {
@@ -87,12 +89,18 @@ class Freepaymentbox extends PaymentModule
 		$this->description = $this->l('Free to use and free of charge paybox payment toolkit adaptation');
 	}
 
-        public function install() {
-		if (!parent::install() || !$this->registerHook('payment') || !$this->registerHook('paymentReturn')) {
-			return false;
-		}
-		return true;
-	}
+    /**
+     * Installation 
+     * 
+     * @return boolean
+     */
+    public function install() 
+    {
+        return parent::install() 
+                && $this->registerHook('payment') 
+                && $this->registerHook('paymentReturn')
+                && $this->addOrderState();
+    }
         
         private function saveSettings(){
             foreach ($this->pb_config as $setting_name){
@@ -110,7 +118,17 @@ class Freepaymentbox extends PaymentModule
      */
     public function hookPayment($params)
     {
-        // tableau des variables du formulaire soumis a Paybox
+        return $this->display(__FILE__, 'payment.tpl'); // si probleme ne pas retourner de tpl pour ne rien afficher
+    }
+
+    /**
+     * Données a ajouter dans le formulaire envoyé a PayBox
+     * 
+     * @return array
+     */
+    public function getFormFields()
+    {
+                // tableau des variables du formulaire soumis a Paybox
         $pbx = array();
         // panier , contient les informations pour réaliser la commande
         $cart = $this->context->cart;
@@ -132,7 +150,7 @@ class Freepaymentbox extends PaymentModule
         // fonctionne sans et n'est spécifié dans l'exemple de l' "ANNEXE TECHNIQUE : Appel par clé HMAC",
         // ni dans le fichier php d'exemple.
         // n'est probablement destiné qu'à l'appel par CGI
-//        $pbx['PBX_MODE'] = '1'; // 1=appel par formulaire html
+        $pbx['PBX_MODE'] = '1'; // 1=appel par formulaire html
         $pbx['PBX_TOTAL'] = (string) ($cart->getOrderTotal() * 100);
         // Adresse email de l’acheteur.
         $pbx['PBX_PORTEUR'] = (string) $this->context->customer->email;
@@ -147,19 +165,19 @@ class Freepaymentbox extends PaymentModule
         // url réponse serveur
         $pbx['PBX_REPONDRE_A'] = Tools::getShopDomain(true) . __PS_BASE_URI__ . 'modules/freepaymentbox/ipn.php';
         
-        foreach ($this->url_customer as $url_customer) {
-            $pbx[$url_customer] = Tools::getShopDomain(true) . __PS_BASE_URI__ . 'index.php?fc=module&module=freepaymentbox&controller=customerreturn&status=' . $url_customer;
-        }
-
+        // 'PBX_REFUSE','PBX_EFFECTUE','PBX_ANNULE' - cf $url_customer
+        $pbx['PBX_REFUSE'] = Tools::getShopDomain(true) . __PS_BASE_URI__ . 'index.php?fc=module&module=freepaymentbox&controller=customerreturn&status=PBX_REFUSE';
+        
+        $pbx['PBX_ANNULE'] = Tools::getShopDomain(true) . __PS_BASE_URI__ . 'index.php?fc=module&module=freepaymentbox&controller=customerreturn&status=PBX_ANNULE';
+        
+//        $digest = hash_hmac('MD5', $id_cart.$pbx['PBX_TOTAL'], $cart->secure_key);
+        $pbx['PBX_EFFECTUE'] = Tools::getShopDomain(true) . __PS_BASE_URI__ . 'index.php?fc=module&module=freepaymentbox&controller=customerreturn&status=PBX_EFFECTUE'  ;
+         
         $msg = '';
         foreach ($pbx as $key => $value) {   // calcul du hash sans url encode
             $msg .= ($key == 'PBX_SITE' ? $key . '=' . $value : '&' . $key . '=' . $value);
         }
 
-        //                 foreach ($this->url_customer as $url_customer){    // urlencode des urls retour,refuse,annule
-        //                     $pbx[$url_customer] = urlencode($pbx[$url_customer]);
-        //                }
-        //          
         // calcul du hmac
         // On récupère la clé secrète HMAC (stockée dans une base de données par exemple) et que l’on renseigne dans la variable $keyTest;
         $keyTest = $config['SECRET_KEY'];  // "ABDCDEF";
@@ -173,17 +191,22 @@ class Freepaymentbox extends PaymentModule
         // La chaîne sera envoyée en majuscules, d'où l'utilisation de strtoupper()
 
         $pbx['PBX_HMAC'] = $hmac;
-
-        /* foreach($pbx as $key => $value){
-          $pbx[$key] = urlencode($pbx[$key]);
-          } */
-        $this->context->smarty->assign('pbx', $pbx);
-
-        $this->context->smarty->assign('pbx_url_form', $this->pb_url[$config['MODE_PROD']]);
-
-        return $this->display(__FILE__, 'payment.tpl'); // si probleme ne pas retourner de tpl pour ne rien afficher
+        
+        return $pbx;
     }
-
+    
+    /**
+     * Url de soumission paybox
+     * 
+     * @todo MODE_PROB est vraiment moche!
+     * 
+     * @return string
+     */
+    public function getFormUrl()
+    {
+        return  $this->pb_url[Configuration::get('MODE_PROD')];
+    }
+    
     /**
 	 *  Page pour le client de retour de la banque
 	 * @param array $params
@@ -247,7 +270,7 @@ class Freepaymentbox extends PaymentModule
 				. $this->l('Save') . '" /></div>
                                     </form>';
 		return $this->_html;
-	}
+    }
         
     /**
      * Verification de la validité des données retournées.
@@ -304,14 +327,71 @@ class Freepaymentbox extends PaymentModule
    {
        return function_exists('openssl_verify');
    }
-          
+   
    /**
-    * Is paybox public key valid
+    * Créer la commande avec status 'en cours de paiement...'
     * 
-    * @return bool
+    * @return bool Order validation success
     */
-   protected function CheckPublicKey()
+   public function preValidateOrder()
    {
-       return $this->getPublic_Key() !== false;
+       $cart = $this->context->cart;
+       $order_state_id = Configuration::get('PBX_PENDING_STATUS');
+       $message = 'Prévalidation de la commande (redirection du client vers le paiement)';
+       
+       return $this->validateOrder(
+            $cart->id,              // $id_cart
+            $order_state_id,        // $id_order_state
+            $cart->getOrderTotal(), // montant
+            'Paybox',               // nom module de paiement
+            $message,
+            array(),
+            null,                   //$currency_special
+            false,                  // $dont_touch_amount
+            $cart->secure_key ? $cart->secure_key : false  // $secure_key - in case there is no secure_key in cart, set to false to validate order anyway
+        );
+   }
+   
+    /**
+     * Is paybox public key valid
+     * 
+     * @return bool
+     */
+    protected function CheckPublicKey()
+    {
+        return $this->getPublic_Key() !== false;
+    }
+    
+    /**
+     * Ajout du status 'En attente de confirmation de paiement (Freepaymentbox)'
+     * 
+     * - Créer le status
+     * - Stock id du status créé dans config PBX_PENDING_STATUS
+     * 
+     * Pour permettre la création de la commande dès le retour du client sur le site
+     * 
+     * @return bool
+     */
+    private function addOrderState()
+    {
+        $os = new OrderState(null, Configuration::get('PS_LANG_DEFAULT'));
+        $os->name = 'Paiement en cours (paybox) ...';
+        $os->send_email = false;
+	$os->module_name = $this->name;
+        $os->invoice = false;
+        $os->color = 'RoyalBlue';
+        $os->unremovable = true;
+        $os->logable = false;
+        $os->delivery = false;
+        $os->hidden = false;
+        $os->shipped = false;
+        $os->paid = false;
+	$os->deleted = false;
+        
+        if($os->save()) {
+            return Configuration::updateValue('PBX_PENDING_STATUS',  $os->id);
         }
+        
+        return false;
+    }
 }

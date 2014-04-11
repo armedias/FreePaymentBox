@@ -14,17 +14,14 @@
  */
  
  /*
- * Template pour affichage client du bouton pour basculer vers le paiement en ligne paybox
+ * Template pour affichage client du bouton pour basculer vers le paiement en ligne paybox (via redirection)
  */
 *}
 
 <p class="payment_module">
-        <br><form method="POST" action="{$pbx_url_form}">
-
-{foreach $pbx as $value}
-   <input type="hidden" name="{$value@key}" value="{$value}">
-{/foreach}
-<img src="modules/freepaymentbox/img/cb.gif">
-<input type="submit" value="Accéder au paiement sécurisé">
-</form>
+	<a href="{$link->getModuleLink('freepaymentbox', 'redirect')}" 
+           title="{l s='Cliquer ici pour payer par carte bancaie' mod='freepaymentbox'}">
+		<img src="{$base_dir_ssl}modules/freepaymentbox/img/cb.gif" alt="{l s='PayBox' mod='freepaymentbox'}" />
+		{l s='Payer par carte bancaire' mod='freepaymentbox'}
+	</a>
 </p>

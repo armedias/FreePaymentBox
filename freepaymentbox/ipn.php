@@ -31,7 +31,7 @@ $AUTHORIZED_IP = array('195.101.99.76',' 194.2.122.158', '195.25.7.166', '127.0.
  * Retour serveur indique que la transaction est effectuée avec succes
  * @var bool
  */
-$success = true;
+$success = false;
 
 /**
  * Comptage des erreurs
@@ -46,6 +46,11 @@ $errors_count = 0;
  */
 $message = '';
 
+/**
+ * Procéder a l'enregistrement de la commande / changement de status ?
+ * @var bool
+ */
+$process = true;
 
 // filtrage par adresse IP
 $ip = $_SERVER['REMOTE_ADDR'];
@@ -81,34 +86,27 @@ $cart = new Cart($id_cart);
 
 // verification que cart retrouvé
 if(!Validate::isLoadedObject($cart)){
-    Logger::addLog('Paiement Paybox (Freepaymentbox) : Paiement sur Cart inexistant ! '.$param_url , 4);
-    echo '<html><head></head><body>Erreur 1</body></html>'; 
-    exit();
+    miseEnEchec('Paiement sur Cart inexistant ! ', 4);
 }
 
 // --- vérification validité du paiement --- (cf doc paybox)
 
 // vérification signature
-if(!Freepaymentbox::verification_signature()){
-    miseEnEchec('Signature banque invalide', 4);
-}
+//if(!Freepaymentbox::verification_signature()){
+//    miseEnEchec('Signature banque invalide', 4);
+//}
 
 // vérification numéro autorisation
-if(is_null($param_autorisation))
+// au cas ou il serait renvoyé
+if(is_null($param_autorisation) || strlen($param_autorisation) < 4)
 {
-    miseEnEchec('Numéro autorisation nul - Paiement non valide');
+    miseEnEchec('Numéro autorisation nul/vide - Paiement non valide');
 }
 
 // vérification code erreur
 if($param_erreur !== '00000')
 {
     miseEnEchec("Echec de la transaction. Le client n'a pas payé. Code erreur $param_erreur");
-}
-
-// vérification du montant - montant payé = montant de la commande
-if( $param_montant != (int)($cart->getOrderTotal(true)*100) )
-{
-    miseEnEchec('Montants paiement et panier différents (panier: '.$cart->getOrderTotal(true).' payé: .'.($param_montant/100).')');
 }
 
 // indication mode test
@@ -123,30 +121,86 @@ if($param_autorisation === 'XXXXXX')
 // commande déjà enregistrée - cas existant ?
 if($cart->OrderExists())
 {
-    // si une seule erreur, si il s'agit du param erreur et que $param_erreur correspond a l'erreur 'paiement déjà effectué'), on ignore cette réponse serveur
-    if( ($errors_count == 1 && $param_erreur === '00015') 
-         ||  $errors_count == 0  
-            )
+    $order = new Order( Order::getOrderByCartId($cart->id) );
+    
+    // verif instanciation order
+    if(!Validate::isLoadedObject($order)) 
     {
-        $message .= 'Retour serveur (1) sur panier/commande existante. '.$param_url;
-        Logger::addLog($message.' / '.$param_url , 2);
-        
-        // Affichage d'un erreur pour être averti par PayBox
-        echo '<html><head></head><body>Erreur 4</body></html>';
-        exit();
+        $message .= 'Retour serveur (3) sur panier/commande existante. Commande non chargée. ';
+        miseEnEchec($message, 4);
+        $process = false;
     }
-    else
+    else //if($errors_count == 0)
     {
-        $message .= 'Retour serveur (2) sur panier/commande existante. '.$param_url;
-        Logger::addLog($message.' / '.$param_url , 2);
-        // Affichage d'un erreur pour être averti par PayBox
-        echo '<html><head></head><body>Erreur 3</body></html>';
-        exit();
+        // verifier montant de la commande avant changement de status
+        if($order->getTotalPaid()*100 != $param_montant )
+        {
+            $message .= 'Retour serveur (4) sur panier/commande existante. Montants incohérents. '
+                    . 'order: '.$order->getTotalPaid()
+                    . 'cart:  '.$cart->getOrderTotal(true);
+            miseEnEchec($message);
+        }
+    }
+    // si $param_erreur correspond a l'erreur 'paiement déjà effectué'), on ignore cette réponse serveur
+    // normalement, ce cas ne se produit pas
+    if($param_erreur === '00015')
+    {
+        $process = false;
+        $success = true;
+        Logger::addLog($message.' / '.$param_url); 
+//        $message .= ' Retour serveur (1) sur panier/commande existante. param_erreur=00015. ';
+//        miseEnEchec($message);
+    }
+    
+    // au final, erreurs ?
+    if($errors_count == 0){
+        $success = true;
+        $message .= ' Paiement validé. Paramètres reçus : '.$param_url;
+        Logger::addLog($message.' / '.$param_url , 1); 
+    }
+            
+    
+    // changement de status de la commande
+    if($process) {
+        if($success) {
+            $order_state = Configuration::get('PS_OS_PAYMENT');
+        }
+        else {
+            $order_state = Configuration::get('PS_OS_ERROR');
+        }
+
+        Context::getContext()->employee = new Employee(1); // dirty hack - sinon mail alert pete un plomb :/
+        // ajout d'un order history
+        $history = new OrderHistory();
+        $history->id_order = (int)$order->id;
+        $history->changeIdOrderState( $order_state, (int)($order->id)); 
+
+        // ajout d'un message
+        $message .= ' Paiement validé. Paramètres reçus : '.$param_url;
+        $order_message = new Message();
+        $order_message->message = $message;
+        $order_message->id_order = (int)$order->id;
+        $order_message->save();
+    }
+
+    // affichage
+    if($success) {
+        echo '<html><head></head><body></body></html>';
+    }
+    else {
+        echo '<html><head></head><body>Erreur 5</body></html>';   
     }
 }
-else // enregistrement de la commande
+else // commande non existante : enregistrement de la commande
 {
-    if($success) {
+    // vérification du montant - montant payé = montant de la commande
+    if( $param_montant != (int)($cart->getOrderTotal(true)*100) )
+    {
+        miseEnEchec('Montants paiement et panier/commande différents (panier: '.$cart->getOrderTotal(true).' payé: .'.($param_montant/100).')');
+    }
+
+    if($errors_count == 0){
+        $success = true;
         $order_state = Configuration::get('PS_OS_PAYMENT');
         $message .= ' Paiement validé. Paramètres reçus : '.$param_url;
         Logger::addLog($message.' / '.$param_url , 1); 
@@ -157,6 +211,7 @@ else // enregistrement de la commande
         Logger::addLog($message.' / '.$param_url , 4); 
     }
 
+    // enregistrement commande
     $payment_module = new Freepaymentbox();
 
     $validate = $payment_module->validateOrder(
@@ -170,14 +225,22 @@ else // enregistrement de la commande
             false, // $dont_touch_amount
             $cart->secure_key ? $cart->secure_key : false  // $secure_key - in case there is no secure_key in cart, set to false to validate order anyway
         );
+    
+    // affichage html
     if(!$validate)
     {
         miseEnEchec('Echec ValidateOrder', 5);
         echo '<html><head></head><body>Erreur 2</body></html>'; 
-        echo $message;
         exit();
     }
-    echo '<html><head></head><body></body></html>';
+    elseif(!$success) 
+    {
+        echo '<html><head></head><body>Erreur 0</body></html>'; 
+        exit();
+    }
+    else {
+        echo '<html><head></head><body></body></html>';
+    }
 }
 
 
@@ -203,13 +266,40 @@ else // enregistrement de la commande
  */
 function miseEnEchec($p_message, $p_niveau_erreur=2)
 {
-    global $success, $message, $errors_count, $param_url;
+    global  $success, 
+            $message, 
+            $errors_count, 
+            $param_url;
     
     // modif var globales
-    $success = false;
     $message .= $p_message;
+    // non necessaire depuis que correspond aux valeurs initiales
+    $success = false;
     $errors_count++;
     
     // enregistrement dans le log PS
     Logger::addLog($p_message.' / '.$param_url , 4);
 }
+
+/*
+ * DEBUG 
+
+effacement commande
+
+DELETE FROM `ps_orders` WHERE `id_order` > 427;
+DELETE FROM ps_order_history WHERE `id_order` > 427;
+DELETE FROM ps_order_carrier WHERE `id_order` > 427;
+DELETE FROM ps_order_detail WHERE `id_order` > 427;
+DELETE FROM ps_order_invoice WHERE `id_order` > 427;
+DELETE FROM ps_order_invoice_payment WHERE `id_order` > 427;
+
+URL ipn : 
+http://localhost/pro/alabrideslezards/prestashop/modules/freepaymentbox/ipn.php?montant=2770&ref_cmd=415_413_20140402144434&autorisation=123456&erreur=00000&signature=IglGG5PidlEijvgnwYxpAbWcG3gq6iae7tF4E%2F1nBc4hm%2FwrgN4njZZFvsnaDwPk7JyADyP4SIeFw%2FLkLw2n7ecb9%2FLf7rAkLijOV5cGLp%2FU5xDpfW1nCYFLMGUq8ds2aZWDMVD9fY%2BLw4c1PLpvQpjIR3xdozST3YRPKUFZNDs%3D
+ * 
+ * URL retour client :
+ * 
+http://localhost/pro/alabrideslezards/prestashop/index.php?fc=module&module=freepaymentbox&controller=customerreturn&status=PBX_EFFECTUE&id_cart=413&total=2770&digest=?
+ * 
+http://localhost/pro/alabrideslezards/prestashop/index.php?fc=module&module=freepaymentbox&controller=customerreturn&status=PBX_EFFECTUE&id_cart=414&total=2860&digest=d1d9fe2a985e9057f24da4a85416ce2c
+
+ */
