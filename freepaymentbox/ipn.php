@@ -175,6 +175,7 @@ if($cart->OrderExists())
         $history = new OrderHistory();
         $history->id_order = (int)$order->id;
         $history->changeIdOrderState( $order_state, (int)($order->id)); 
+        $history->add(); // mise a jour de l'order
 
         // ajout d'un message
         $message .= ' Paiement validé. Paramètres reçus : '.$param_url;
