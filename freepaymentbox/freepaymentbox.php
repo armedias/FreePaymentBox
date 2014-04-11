@@ -379,14 +379,14 @@ class Freepaymentbox extends PaymentModule
         $os->send_email = false;
 	$os->module_name = $this->name;
         $os->invoice = false;
-        $os->color = 'Orange';
+        $os->color = 'RoyalBlue';
         $os->unremovable = true;
-        $os->logable = true;
+        $os->logable = false;
         $os->delivery = false;
         $os->hidden = false;
         $os->shipped = false;
         $os->paid = false;
-	$deleted = false;
+	$os->deleted = false;
         
         if($os->save()) {
             return Configuration::updateValue('PBX_PENDING_STATUS',  $os->id);

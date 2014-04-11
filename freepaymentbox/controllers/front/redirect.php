@@ -28,17 +28,17 @@ class FreepaymentboxRedirectModuleFrontController extends ModuleFrontController
         $duplicate_result = $this->context->cart->duplicate();
         // création de la commande avec status en cours de paiement
         $module->preValidateOrder();
+
+        // formulaire
+        $this->context->smarty->assign('params', $module->getFormFields());
+        $this->context->smarty->assign('pb_url', $module->getFormUrl());
         
-        // duplication du panier (copié avant commande)
+        // duplication du panier (copié avant commande, a dupliquer apres prise des params via le module ->getFormFields ...)
         if($duplicate_result['success'])
         {
             $this->context->cart = $duplicate_result['cart'];
             $this->context->cookie->id_cart = $this->context->cart->id;
         }
-        
-        // formulaire
-        $this->context->smarty->assign('params', $module->getFormFields());
-        $this->context->smarty->assign('pb_url', $module->getFormUrl());
         
         $this->setTemplate('redirect.tpl');
     }
