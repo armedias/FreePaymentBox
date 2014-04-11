@@ -55,10 +55,10 @@ $process = true;
 // filtrage par adresse IP
 $ip = $_SERVER['REMOTE_ADDR'];
 
-if(!in_array($ip, $AUTHORIZED_IP)) {
-    header('Unauthorized', true, 401);
-    exit();
-}
+//if(!in_array($ip, $AUTHORIZED_IP)) {
+//    header('Unauthorized', true, 401);
+//    exit();
+//}
 
 // ensemble param url (pour debugage/surveillance)
 $param_url = '';
@@ -92,9 +92,9 @@ if(!Validate::isLoadedObject($cart)){
 // --- vérification validité du paiement --- (cf doc paybox)
 
 // vérification signature
-//if(!Freepaymentbox::verification_signature()){
-//    miseEnEchec('Signature banque invalide', 4);
-//}
+if(!Freepaymentbox::verification_signature()){
+    miseEnEchec('Signature banque invalide', 4);
+}
 
 // vérification numéro autorisation
 // au cas ou il serait renvoyé
@@ -133,11 +133,12 @@ if($cart->OrderExists())
     else //if($errors_count == 0)
     {
         // verifier montant de la commande avant changement de status
-        if($order->getTotalPaid()*100 != $param_montant )
+
+        if($cart->getOrderTotal()*100 != $param_montant )
         {
             $message .= 'Retour serveur (4) sur panier/commande existante. Montants incohérents. '
-                    . 'order: '.$order->getTotalPaid()
-                    . 'cart:  '.$cart->getOrderTotal(true);
+                    . 'cart: '.$cart->getOrderTotal()*100
+                    . 'param_montant:  '.$param_montant;
             miseEnEchec($message);
         }
     }
