@@ -3,6 +3,7 @@
  * FreePaymentBox
  * 
  * Module de paiement PayBox(TM) pour Prestashop (TM).
+ * http://prestashop.seb7.fr/
  * 
  * Fourni sans garantie.
  * 
@@ -12,7 +13,6 @@
  * 
  * @license http://www.gnu.org/licenses/gpl-3.0.txt GPL v3.0
  */
-
 
 if (!defined('_PS_VERSION_')) {
 	exit;
@@ -30,9 +30,20 @@ class Freepaymentbox extends PaymentModule
      */
     private $_html = '';
     
-        // url appel paybox classique
-        private $pb_url; 
+    // url appel paybox classique
+    private $pb_url; 
     
+    /**
+     * Variables de base du module
+     * 
+     * @inheritdoc
+     * @var string 
+     */
+    public $name = 'freepaymentbox';
+    public $tab = 'payments_gateways';
+    public $version = '1.1';
+    public $currencies = false;
+
     /**
      * Variable configurables (en admin)
      * Les variables préfixés PBX seront incluses dans le formulaire de paiement soumis au site
@@ -58,13 +69,9 @@ class Freepaymentbox extends PaymentModule
     private $url_customer = array('PBX_REFUSE','PBX_EFFECTUE','PBX_ANNULE');
 
         
-	public function __construct() {
-		$this->name = 'freepaymentbox';
-		$this->tab = 'payments_gateways';
-		$this->version = '1.0';
-		$this->currencies = false;
-
-		parent::__construct();
+    public function __construct($name = null, Context $context = null) 
+    {
+        parent::__construct($name, $context);
 
         // Gestion de l'url Paybox mobile et classique
         // 0 préprod
@@ -85,9 +92,9 @@ class Freepaymentbox extends PaymentModule
             );
         }
 
-		$this->displayName = $this->l('Freepaymentbox');
-		$this->description = $this->l('Free to use and free of charge paybox payment toolkit adaptation');
-	}
+        $this->displayName = $this->l('Freepaymentbox');
+        $this->description = $this->l('Module pour le paiement par PayBox');
+    }
 
     /**
      * Installation 
@@ -245,11 +252,11 @@ class Freepaymentbox extends PaymentModule
             $this->_html .= $this->displayError( $this->l('Votre serveur ne dispose des fonctions openssl requises') );
         }
         if(!$this->CheckPublicKey()) {
-            $this->_html .= $this->displayError( $this->l('Vous n avez pas renseigné la clé public Paybox') );
+            $this->_html .= $this->displayError( $this->l('Vous n avez pas renseigné la clé public Paybox ou elle est invalide (consultez le log)') );
         }
         
         // fin si erreurs
-        if($this->error) { //  $this->displayError() a mis $this->error à true ( ^^ ! SRP !)
+        if(isset($this->error) && $this->error) { //  $this->displayError() a mis $this->error à true ( ^^ ! SRP !)
             return $this->_html;
         }
         
@@ -311,11 +318,28 @@ class Freepaymentbox extends PaymentModule
         // 4 , 5 et 6 par openssl_verify
         return openssl_verify($signed_data, $signature, $pub_key ) === 1;
     }
-                      
+     
+    /**
+     * Clé publique extraite du certificat passé en paramètre
+     * 
+     * @return mixed resource|false
+     */
     protected static function getPublic_Key()
     {
-        $file_content = @file_get_contents(__DIR__.'/pubkey.pem');
-        return openssl_pkey_get_public($file_content);
+        $instance = new self;
+        $file_content = @file_get_contents($instance->getLocalPath().'pubkey.pem');
+        if(!$file_content)
+        {
+            Logger::addLog('Impossible de trouver la cle publique '.$instance->getLocalPath().'pubkey.pem', 3, null, null, null, true);
+            return false;
+        }
+        
+        $cle = openssl_pkey_get_public($file_content);
+        if(!$cle) {
+            Logger::addLog('Impossible d extraire la clé du certificat, votre fichier '.$instance->getLocalPath().'pubkey.pem est invalide.', 3, null, null, null, true);
+            return false;
+        }
+        return $cle;
     }
                 
     /**
