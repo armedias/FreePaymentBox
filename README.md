@@ -1,35 +1,61 @@
-FreePaymentBox
-==============
+# FreePaymentBox
 
-Module for using Paybox in Prestashop 1.5 with no CGI module required, SHA512 used 
+Module de paiment PayBox Prestashop 1.5 (1.6).
 
-This is free software, and as such comes with NO WARRANTY.
+Utilise la methode de vérification des données HMAC. (et non pas la methode par CGI).
 
-This is an adaptator of Paybox Payment system for Prestashop.
+## Pré-requis
 
-Version is now 0.01.
+- prestashop >= 1.5.2
+- serveur web avec php
+- extension openssl (généralement pré-installée sur les serveurs)
+- un compte client paybox
 
-It already works on a real shop with real money.
+La documentation et le compte Paybox sont fournis par Paybox.
 
-To works you need
-- php
-- openssl
-- a test account (provided by paybox) or a real customer test.
+## Etat
 
-Admin part of the module is pretty ugly at this time
-- mode_prod : 0 is for test, 1 is for production
-- pbx_hash : is to be set to SHA512
+Ce module est utilisé en production, il est fonctionnel.
 
-Documentation, test account and public key are provided by Paybox and are needed. Those are supplied in Paybox download section.
+## Services
 
-This module is not made by Paybox and has no relation with Point Transaction Systems. 
-Prestashop is not involved in this project.
+Je peux installer ce module et le paramétrer pour vous. [Contactez moi](http://seb7.fr).
+
+## Merci
+
+Si vous utilisez ce module, vous pouvez me remercier en me gratiffiant d'un petit quelque chose : 
+[Merci](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=BNDQYWMZVUNES)
+
+## Todo - Contribuez
+
+- formulaire d'administration
+- refactorisation du code (intégration dans le module)
+- basculement vers le serveur de secours paybox
+- Paramétrer le niveau de log
+- ... pas mal de choses sont faisables
+
+
+## DISCLAIMER
+
+### fr
+
+Ce module n'est pas réalisé par PayBox et n'est pas lié Point Transaction System.
+Prestashop n'est pas lié au projet.
+
+Prestashop, Paybox et Point Transaction Systems sont des marques déposées.
+
+Pour des raisons légales, ce module est fourni sans aucune garanti. Les developpeurs ne pourrons en aucun cas être tenus responsables si d'eventuelles dysfonctionnements ou perturbations liés au module pouvaient survenir.
+
+Ce module est publié sous [Licence GPL v3](http://www.gnu.org/licenses/gpl-3.0.txt).
+
+### en
+
+This module is NOT made by Paybox and has no relation with Point Transaction Systems. 
+Prestashop is NOT involved in this project.
 
 Paybox, Point Transaction Systems and Prestashop are registred trademarks.
 
-Before asking or aguing, remember that module is 'FREE' and that no one 'PAY' me :) 
-
-Have a good journey
+This code provided as NO WARRANTY and is published under the [GPL v3 License](http://www.gnu.org/licenses/gpl-3.0.txt).
 
 
 
